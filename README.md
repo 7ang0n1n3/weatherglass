@@ -53,7 +53,7 @@ cd weatherglass
 uv run python app.py
 ```
 
-Open **http://localhost:5099** — default location is Tokyo. Click **⚙ Set Location** to change it.
+Open **http://localhost:5099** — default location is Tokyo Hino-shi, Japan (35.6790, 139.3935). Click **⚙ Set Location** to change it.
 
 ---
 
@@ -183,7 +183,7 @@ weatherglass/
 | `GET /api/timezone?lat=&lng=` | Timezone lookup via Open-Meteo |
 | `GET /api/health` | Connectivity check — tests all upstream APIs |
 
-All endpoints accept `lat` and `lng` query parameters, defaulting to Tokyo (35.5627, 139.6899).
+All endpoints accept `lat` and `lng` query parameters, defaulting to Tokyo Hino-shi, Japan (35.6790, 139.3935).
 
 ### Health Check
 
