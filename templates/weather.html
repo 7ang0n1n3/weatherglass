@@ -872,7 +872,7 @@ async function init(){
   setInterval(async()=>{try{const[w,a]=await Promise.all([fetchWeather(),fetchAmedas()]);renderCurrent(w,a);}catch(e){}},300000);
   setInterval(async()=>{try{const w=await fetchWeather();renderHourly(w);renderDaily(w);}catch(e){}},3600000);
   setInterval(async()=>{try{await fetchRainViewer();}catch(e){}},300000);
-  setInterval(updateISS,5000);
+  setInterval(updateISS,15000);
   setInterval(()=>{if(issTerminator&&typeof issTerminator.setTime==='function')issTerminator.setTime();},60000);
   setInterval(refreshWindVelocity,600000);
   updateWindMap();

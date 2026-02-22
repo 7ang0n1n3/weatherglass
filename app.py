@@ -40,7 +40,7 @@ WINDGRID_CACHE_TTL = 600  # 10 minutes
 
 _iss_cache = {"data": None, "ts": 0}
 _iss_cache_lock = threading.Lock()
-ISS_CACHE_TTL = 3
+ISS_CACHE_TTL = 15
 
 # ─── AMeDAS (JMA Japan-only station observations) ───────────────────────────
 
@@ -287,7 +287,7 @@ def api_iss():
         if _iss_cache["data"] and (now - _iss_cache["ts"]) < ISS_CACHE_TTL:
             return jsonify(_iss_cache["data"])
     try:
-        r = requests.get("https://api.wheretheiss.at/v1/satellites/25544", timeout=5)
+        r = requests.get("https://api.wheretheiss.at/v1/satellites/25544", timeout=10)
         r.raise_for_status()
         data = r.json()
         with _iss_cache_lock:
