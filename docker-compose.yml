@@ -8,8 +8,8 @@ services:
       bash -c "
         apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates &&
         pip install --no-cache-dir uv &&
-        rm -rf /wgapp && git clone https://github.com/7ang0n1n3/weatherglass.git /wgapp &&
-        cd /wgapp && uv sync --frozen &&
+        rm -rf /app && git clone https://github.com/7ang0n1n3/weatherglass.git /app &&
+        cd /app && uv sync --frozen &&
         uv run python app.py
       "
     ports:
@@ -17,9 +17,3 @@ services:
     restart: unless-stopped
     environment:
       PYTHONUNBUFFERED: "1"
-      UV_PROJECT_ENVIRONMENT: "/wgapp/.venv"
-    volumes:
-      - quote_cache:/wgapp/.cache_quotes
-
-volumes:
-  quote_cache:
