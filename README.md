@@ -93,7 +93,7 @@ To pick up new code from GitHub, simply restart the container — it re-clones o
 
 ```yaml
 ports:
-  - "8080:5099"
+  - "5099:5099"
 ```
 
 ---
