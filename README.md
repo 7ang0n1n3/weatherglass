@@ -12,6 +12,10 @@
 > - Added seismic activity panel (USGS M2.5+ weekly feed, no API key)
 
 <p align="center">
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/python-3.10+-blue?logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/flask-3.x-lightgrey?logo=flask" alt="Flask">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
