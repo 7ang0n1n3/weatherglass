@@ -1,7 +1,7 @@
 <h1 align="center">WeatherGlass</h1>
 
 <p align="center">
-  A self-hosted weather dashboard with real-time conditions, forecasts, radar, wind maps, and ISS tracking — all in a single Flask app.
+  A self-hosted weather dashboard with real-time conditions, forecasts, radar, wind maps, seismic activity, and ISS tracking — all in a single Flask app.
 </p>
 
 > **Fork of [elkentaro/weatherglass](https://github.com/elkentaro/weatherglass)** — full credit to the original author for the dashboard design and core implementation.
@@ -9,6 +9,7 @@
 > **Changes in this fork:**
 > - Removed the countdown timer panel and all associated DEF CON theming
 > - Replaced the earth.nullschool.net iframe wind map with a proper Leaflet map + leaflet-velocity particle animation — country outlines are now visible alongside live wind data, and the grid adapts to the visible map area
+> - Added seismic activity panel (USGS M2.5+ weekly feed, no API key)
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10+-blue?logo=python&logoColor=white" alt="Python">
@@ -27,6 +28,7 @@
 - **Run conditions gauge** — configurable scoring system for outdoor running suitability
 - **Precipitation radar** — animated RainViewer overlay with playback controls
 - **Wind & currents map** — Leaflet map with live wind particle animation via leaflet-velocity
+- **Seismic activity panel** — nearby M2.5+ earthquakes from the USGS weekly feed, sorted by distance with magnitude colour coding, depth, and time ago
 - **ISS tracker** — real-time orbital position, trail, day/night terminator
 - **Moon phase** — photorealistic canvas-rendered moon with illumination data
 - **Dark / Light theme** — toggle between dark and light mode, persists across sessions
@@ -176,7 +178,8 @@ weatherglass/
 | `GET /api/weather?lat=&lng=&tz=` | Open-Meteo forecast (cached 10 min) |
 | `GET /api/amedas?lat=&lng=` | JMA AMeDAS station data (Japan only, cached 5 min) |
 | `GET /api/windgrid?lat=&lng=&n=&s=&e=&w=` | Wind vector grid for leaflet-velocity (cached 10 min) |
-| `GET /api/iss` | ISS position (cached 3 sec) |
+| `GET /api/earthquakes?lat=&lng=` | USGS M2.5+ earthquakes within 1500 km (cached 10 min) |
+| `GET /api/iss` | ISS position (cached 15 sec) |
 | `GET /api/timezone?lat=&lng=` | Timezone lookup via Open-Meteo |
 | `GET /api/health` | Connectivity check — tests all upstream APIs |
 
@@ -188,10 +191,11 @@ Hit `/api/health` to diagnose connectivity issues. Returns status, latency, and 
 
 ```json
 {
-  "open-meteo": {"ok": true, "status": 200, "ms": 342},
-  "rainviewer": {"ok": true, "status": 200, "ms": 198},
-  "iss":        {"ok": true, "status": 200, "ms": 567},
-  "jma-amedas": {"ok": true, "status": 200, "ms": 89}
+  "open-meteo":        {"ok": true, "status": 200, "ms": 342},
+  "rainviewer":        {"ok": true, "status": 200, "ms": 198},
+  "iss":               {"ok": true, "status": 200, "ms": 567},
+  "jma-amedas":        {"ok": true, "status": 200, "ms": 89},
+  "usgs-earthquakes":  {"ok": true, "status": 200, "ms": 361}
 }
 ```
 
@@ -208,6 +212,7 @@ Hit `/api/health` to diagnose connectivity issues. Returns status, latency, and 
 | [Where the ISS at?](https://wheretheiss.at) | ISS orbital position |
 | [Weather Underground](https://www.wunderground.com) | External weather link |
 | [Himawari-9](https://himawari.asia/) | Satellite imagery link |
+| [USGS Earthquake Hazards](https://earthquake.usgs.gov) | M2.5+ earthquake feed (no API key required) |
 
 ---
 

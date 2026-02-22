@@ -51,6 +51,10 @@ AMEDAS_CACHE_TTL = 300
 _amedas_table_cache = {"data": None, "ts": 0}
 _amedas_table_cache_lock = threading.Lock()
 
+_eq_cache = {}  # keyed by "lat,lng" -> {"data", "ts"}
+_eq_cache_lock = threading.Lock()
+EQ_CACHE_TTL = 600  # 10 minutes
+
 JMA_AMEDAS_BASE = "https://www.jma.go.jp/bosai/amedas/data"
 JMA_AMEDAS_TABLE = "https://www.jma.go.jp/bosai/amedas/const/amedastable.json"
 JMA_HEADERS = {
@@ -99,6 +103,14 @@ def _find_nearest_station(lat, lon, table, obs_data=None):
 def _is_japan(lat, lng):
     """Check if coordinates are roughly within Japan's bounding box."""
     return 24.0 <= lat <= 46.0 and 122.0 <= lng <= 154.0
+
+
+def _haversine_km(lat1, lon1, lat2, lon2):
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+    return R * 2 * math.asin(math.sqrt(a))
 
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
@@ -302,6 +314,78 @@ def api_iss():
         return jsonify({"error": str(e)}), 502
 
 
+@app.route("/api/earthquakes")
+def api_earthquakes():
+    """Return recent M2.5+ earthquakes within 1500 km of a location (USGS)."""
+    lat = request.args.get("lat", DEFAULT_LAT, type=float)
+    lng = request.args.get("lng", DEFAULT_LNG, type=float)
+    cache_key = f"{lat:.2f},{lng:.2f}"
+    now = time.time()
+
+    with _eq_cache_lock:
+        cached = _eq_cache.get(cache_key)
+        if cached and (now - cached["ts"]) < EQ_CACHE_TTL:
+            return jsonify({**cached["data"], "cached": True, "age": int(now - cached["ts"])})
+
+    try:
+        r = requests.get(
+            "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson",
+            timeout=15,
+        )
+        r.raise_for_status()
+        features = r.json().get("features", [])
+
+        results = []
+        for f in features:
+            props = f.get("properties", {})
+            coords = f.get("geometry", {}).get("coordinates", [])
+            if len(coords) < 2:
+                continue
+            eq_lng, eq_lat = coords[0], coords[1]
+            depth = coords[2] if len(coords) > 2 else 0
+            dist_km = _haversine_km(lat, lng, eq_lat, eq_lng)
+            if dist_km > 1500:
+                continue
+            time_ms = props.get("time", 0) or 0
+            age_s = int((now * 1000 - time_ms) / 1000)
+            if age_s < 60:
+                time_ago = f"{age_s}s ago"
+            elif age_s < 3600:
+                time_ago = f"{age_s // 60}m ago"
+            elif age_s < 86400:
+                time_ago = f"{age_s // 3600}h ago"
+            else:
+                time_ago = f"{age_s // 86400}d ago"
+            results.append({
+                "mag": props.get("mag"),
+                "place": props.get("place", "Unknown"),
+                "dist_km": round(dist_km),
+                "depth_km": round(depth, 1),
+                "time_ago": time_ago,
+            })
+
+        results.sort(key=lambda x: x["dist_km"])
+        results = results[:15]
+        payload = {
+            "earthquakes": results,
+            "total": len(results),
+            "radius_km": 1500,
+            "cached": False,
+            "age": 0,
+        }
+        with _eq_cache_lock:
+            _eq_cache[cache_key] = {"data": payload, "ts": now}
+        return jsonify(payload)
+
+    except Exception as e:
+        log.warning(f"USGS fetch failed: {e}")
+        with _eq_cache_lock:
+            cached = _eq_cache.get(cache_key)
+            if cached:
+                return jsonify({**cached["data"], "cached": True, "age": int(now - cached["ts"]), "error": str(e)})
+        return jsonify({"error": str(e)}), 502
+
+
 @app.route("/api/health")
 def api_health():
     """Quick connectivity check — tests outbound HTTP to Open-Meteo."""
@@ -311,6 +395,7 @@ def api_health():
         ("rainviewer", "https://api.rainviewer.com/public/weather-maps.json"),
         ("iss", "https://api.wheretheiss.at/v1/satellites/25544"),
         ("jma-amedas", "https://www.jma.go.jp/bosai/amedas/data/latest_time.txt"),
+        ("usgs-earthquakes", "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson"),
     ]:
         try:
             t0 = time.time()

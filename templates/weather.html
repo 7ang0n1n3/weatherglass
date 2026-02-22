@@ -222,6 +222,23 @@ body{background:var(--bg-0);color:var(--text-primary);font-family:var(--sans);li
 .iss-tooltip{font-family:var(--mono) !important;font-size:10px !important;background:var(--bg-1) !important;color:var(--yellow) !important;border:1px solid var(--border) !important;border-radius:4px !important;padding:3px 8px !important;box-shadow:0 4px 12px rgba(0,0,0,0.4) !important}
 .iss-tooltip::before{border-top-color:var(--border) !important}
 
+.eq-panel{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.eq-panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)}
+.eq-panel-header-left{display:flex;align-items:center;gap:10px}
+.eq-panel-header-left span:first-child{font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text-secondary);font-family:var(--mono)}
+.eq-trail-info{font-weight:400;color:var(--text-muted);font-size:10px;font-family:var(--mono);text-transform:none}
+.eq-stats{display:flex;gap:16px;font-family:var(--mono);font-size:10px;color:var(--text-muted)}
+.eq-stats .val{color:var(--text-primary);font-weight:600}
+.eq-stats .lbl{margin-right:4px}
+.eq-list{max-height:300px;overflow-y:auto}
+.eq-item{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.eq-item:last-child{border-bottom:none}
+.eq-mag{width:36px;height:36px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:var(--mono)}
+.eq-place{color:var(--text-primary);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq-depth{color:var(--text-muted);font-size:10px;margin-top:2px}
+.eq-meta{text-align:right;white-space:nowrap;color:var(--text-muted);font-size:10px}
+.eq-dist{color:var(--text-secondary);font-size:11px;font-weight:600}
+
 .leaflet-container{background:var(--bg-0) !important}
 .leaflet-control-zoom a{background:var(--bg-1) !important;color:var(--text-primary) !important;border-color:var(--border) !important}
 .leaflet-control-zoom a:hover{background:var(--bg-2) !important}
@@ -374,6 +391,22 @@ body{background:var(--bg-0);color:var(--text-primary);font-family:var(--sans);li
     </div>
   </div>
 
+  <div class="section-title">Seismic Activity — Nearby</div>
+  <div class="eq-panel">
+    <div class="eq-panel-header">
+      <div class="eq-panel-header-left">
+        <span>Nearby Earthquakes</span>
+        <span class="eq-trail-info" id="eq-status">Loading...</span>
+      </div>
+      <div class="eq-stats">
+        <span><span class="lbl">EVENTS</span><span class="val" id="eq-count">—</span></span>
+        <span><span class="lbl">STRONGEST</span><span class="val" id="eq-max-mag">—</span></span>
+        <span><span class="lbl">CLOSEST</span><span class="val" id="eq-closest">—</span> km</span>
+      </div>
+    </div>
+    <div id="eq-list"><div class="loading-state"><div class="spinner"></div>Loading seismic data...</div></div>
+  </div>
+
   <div class="section-title">ISS Tracker &amp; Day/Night Terminator — Live</div>
   <div class="iss-panel">
     <div class="iss-panel-header">
@@ -390,7 +423,7 @@ body{background:var(--bg-0);color:var(--text-primary);font-family:var(--sans);li
   </div>
 
   <div class="data-sources">
-    <span>Data: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> · <a href="https://www.rainviewer.com" target="_blank">RainViewer</a> · <a href="https://earth.nullschool.net" target="_blank">nullschool</a> · <a href="https://wheretheiss.at" target="_blank">Where the ISS at?</a> · <a href="https://himawari.asia/" target="_blank">Himawari-9</a></span>
+    <span>Data: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> · <a href="https://www.rainviewer.com" target="_blank">RainViewer</a> · <a href="https://earth.nullschool.net" target="_blank">nullschool</a> · <a href="https://wheretheiss.at" target="_blank">Where the ISS at?</a> · <a href="https://himawari.asia/" target="_blank">Himawari-9</a> · <a href="https://earthquake.usgs.gov" target="_blank">USGS Earthquakes</a></span>
   </div>
 </div>
 
@@ -576,6 +609,7 @@ function fetchWithTimeout(url,ms=12000){
   const id=setTimeout(()=>ctrl.abort(),ms);
   return fetch(url,{signal:ctrl.signal}).finally(()=>clearTimeout(id));
 }
+function _esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 async function fetchWeather(){
   const res=await fetchWithTimeout('/api/weather?'+getLocQueryString());
@@ -789,6 +823,72 @@ async function refreshWindVelocity(){
     if(el)el.textContent='Wind data unavailable';
   }
 }
+function _eqMagColor(m){
+  if(m==null)return{bg:'var(--bg-3)',color:'var(--text-muted)'};
+  if(m<4)return{bg:'rgba(52,211,153,0.15)',color:'var(--green)'};
+  if(m<5)return{bg:'rgba(251,191,36,0.15)',color:'var(--yellow)'};
+  if(m<6)return{bg:'rgba(251,146,60,0.18)',color:'var(--orange)'};
+  return{bg:'rgba(248,113,113,0.18)',color:'var(--red)'};
+}
+async function refreshEarthquakes(){
+  try{
+    const res=await fetchWithTimeout('/api/earthquakes?'+getLocQueryString(),20000);
+    if(!res.ok)throw new Error(res.status);
+    const data=await res.json();
+    if(data.error&&!data.earthquakes)throw new Error(data.error);
+    renderEarthquakes(data);
+    const ts=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('eq-status').textContent='Updated '+ts+' - radius '+data.radius_km+' km';
+  }catch(e){
+    console.warn('[WG] earthquakes FAIL:',e);
+    document.getElementById('eq-status').textContent='Seismic data unavailable';
+    const listEl=document.getElementById('eq-list');
+    listEl.textContent='';
+    const err=document.createElement('div');err.className='error-state';
+    err.textContent='Could not load seismic data';
+    listEl.appendChild(err);
+  }
+}
+function renderEarthquakes(data){
+  const eqs=data.earthquakes||[];
+  const countEl=document.getElementById('eq-count');
+  const maxMagEl=document.getElementById('eq-max-mag');
+  const closestEl=document.getElementById('eq-closest');
+  const listEl=document.getElementById('eq-list');
+  countEl.textContent=eqs.length||'0';
+  if(eqs.length===0){
+    maxMagEl.textContent='--';closestEl.textContent='--';
+    listEl.textContent='';
+    const empty=document.createElement('div');empty.className='loading-state';
+    empty.style.color='var(--text-muted)';
+    empty.textContent='No M2.5+ earthquakes within 1500 km in the past week';
+    listEl.appendChild(empty);return;
+  }
+  const mags=eqs.map(function(e){return e.mag;}).filter(function(m){return m!=null;});
+  const maxMag=mags.length?Math.max.apply(null,mags):null;
+  maxMagEl.textContent=maxMag!=null?'M'+maxMag.toFixed(1):'--';
+  closestEl.textContent=eqs[0].dist_km;
+  listEl.textContent='';
+  for(var i=0;i<eqs.length;i++){
+    var eq=eqs[i];
+    var mc=_eqMagColor(eq.mag);
+    var item=document.createElement('div');item.className='eq-item';
+    var magEl=document.createElement('div');magEl.className='eq-mag';
+    magEl.style.background=mc.bg;magEl.style.color=mc.color;
+    magEl.textContent=eq.mag!=null?eq.mag.toFixed(1):'?';
+    item.appendChild(magEl);
+    var mid=document.createElement('div');
+    var placeEl=document.createElement('div');placeEl.className='eq-place';placeEl.textContent=eq.place;
+    var depthEl=document.createElement('div');depthEl.className='eq-depth';depthEl.textContent=eq.depth_km+' km depth';
+    mid.appendChild(placeEl);mid.appendChild(depthEl);item.appendChild(mid);
+    var meta=document.createElement('div');meta.className='eq-meta';
+    var distEl=document.createElement('div');distEl.className='eq-dist';distEl.textContent=eq.dist_km+' km';
+    var timeEl=document.createElement('div');timeEl.textContent=eq.time_ago;
+    meta.appendChild(distEl);meta.appendChild(timeEl);item.appendChild(meta);
+    listEl.appendChild(item);
+  }
+}
+
 function updateWindMap(){
   if(!windMap)return;
   windMap.setView([_location.lat,_location.lng],5);
@@ -875,7 +975,9 @@ async function init(){
   setInterval(updateISS,15000);
   setInterval(()=>{if(issTerminator&&typeof issTerminator.setTime==='function')issTerminator.setTime();},60000);
   setInterval(refreshWindVelocity,600000);
+  setInterval(refreshEarthquakes,600000);
   updateWindMap();
+  refreshEarthquakes();
 }
 init();
 
