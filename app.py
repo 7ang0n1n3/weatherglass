@@ -23,9 +23,9 @@ log = logging.getLogger("weatherglass")
 
 # ─── Defaults ────────────────────────────────────────────────────────────────
 
-DEFAULT_LAT = 35.5627
-DEFAULT_LNG = 139.6899
-DEFAULT_LABEL = "Tokyo, Japan"
+DEFAULT_LAT = 35.6790
+DEFAULT_LNG = 139.3935
+DEFAULT_LABEL = "Tokyo Hino-shi, Japan"
 DEFAULT_TZ = "Asia/Tokyo"
 
 # ─── Caches ──────────────────────────────────────────────────────────────────
