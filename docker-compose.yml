@@ -3,6 +3,7 @@ name: weatherglass
 services:
   weatherglass:
     image: python:3.12-slim
+    pull_policy: always
     command: >
       bash -c "
         apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates &&
@@ -16,9 +17,9 @@ services:
     restart: unless-stopped
     environment:
       PYTHONUNBUFFERED: "1"
-      UV_PROJECT_ENVIRONMENT: "/app/.venv"
+      UV_PROJECT_ENVIRONMENT: "/wgapp/.venv"
     volumes:
-      - quote_cache:/app/.cache_quotes
+      - quote_cache:/wgapp/.cache_quotes
 
 volumes:
   quote_cache:
