@@ -8,8 +8,8 @@ services:
       bash -c "
         apt-get update -qq && apt-get install -y --no-install-recommends git ca-certificates &&
         pip install --no-cache-dir uv &&
-        git clone https://github.com/7ang0n1n3/weatherglass.git /app &&
-        cd /app && uv sync --frozen &&
+        git clone https://github.com/7ang0n1n3/weatherglass.git /wgapp &&
+        cd /wgapp && uv sync --frozen &&
         uv run python app.py
       "
     ports:
