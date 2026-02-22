@@ -1,0 +1,37 @@
+[Unit]
+Description=WeatherGlass — Standalone Weather Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=weatherglass
+Group=weatherglass
+WorkingDirectory=/opt/weatherglass
+ExecStart=/usr/bin/uv run python app.py
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+Environment="FLASK_ENV=production"
+Environment="PYTHONUNBUFFERED=1"
+Environment="UV_PROJECT_ENVIRONMENT=/opt/weatherglass/.venv"
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/weatherglass
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=weatherglass
+
+[Install]
+WantedBy=multi-user.target

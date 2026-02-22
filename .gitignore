@@ -1,0 +1,7 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.python-version
+.cache_quotes/

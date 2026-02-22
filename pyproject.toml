@@ -1,0 +1,12 @@
+[project]
+name = "weatherglass"
+version = "1.0.0"
+description = "Standalone weather dashboard with configurable location"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0",
+    "requests>=2.31",
+]
+
+[tool.uv]
+dev-dependencies = []
