@@ -77,6 +77,27 @@ The location modal accepts Google Maps URLs in these formats:
 
 ## Production Deployment
 
+### Docker (Portainer / Docker Compose)
+
+The included `docker-compose.yml` uses a stock `python:3.12-slim` image — no build step required. On startup the container clones the repo from GitHub, installs dependencies with `uv`, and runs the app. The quote cache is persisted in a named Docker volume.
+
+```bash
+docker compose up -d
+```
+
+Or paste the contents of `docker-compose.yml` directly into Portainer as a new stack.
+
+To pick up new code from GitHub, simply restart the container — it re-clones on every startup.
+
+**Changing the port:** edit the `ports` mapping in `docker-compose.yml`:
+
+```yaml
+ports:
+  - "8080:5099"
+```
+
+---
+
 ### Install as a systemd service
 
 ```bash
@@ -137,6 +158,7 @@ weatherglass/
 ├── app.py                  # Flask backend — API proxies + caching
 ├── templates/
 │   └── weather.html        # Single-page frontend (CSS + JS inline)
+├── docker-compose.yml      # Docker / Portainer deployment
 ├── weatherglass.service    # systemd unit file
 ├── pyproject.toml          # Project metadata + dependencies
 ├── uv.lock                 # Locked dependency versions
