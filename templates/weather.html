@@ -431,7 +431,7 @@ body{background:var(--bg-0);color:var(--text-primary);font-family:var(--sans);li
 // ═══════════════════════════════════════════════════════════════════
 //  LOCATION MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════
-const DEFAULT_LOCATION={lat:35.5627,lng:139.6899,name:'Tokyo, Japan',tz:'Asia/Tokyo'};
+const DEFAULT_LOCATION={lat:35.6790,lng:139.3935,name:'Tokyo Hino-shi, Japan',tz:'Asia/Tokyo'};
 function loadLocation(){try{const s=localStorage.getItem('weatherglass_location');if(s)return{...DEFAULT_LOCATION,...JSON.parse(s)};}catch(e){}return{...DEFAULT_LOCATION};}
 function saveLocationToStorage(loc){try{localStorage.setItem('weatherglass_location',JSON.stringify(loc));}catch(e){}}
 let _location=loadLocation();
