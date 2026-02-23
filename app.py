@@ -32,11 +32,11 @@ DEFAULT_TZ = "Asia/Tokyo"
 
 _weather_cache = {}  # keyed by "lat,lng" → {"data", "ts"}
 _weather_cache_lock = threading.Lock()
-WEATHER_CACHE_TTL = 600  # 10 minutes
+WEATHER_CACHE_TTL = 1800  # 30 minutes
 
 _windgrid_cache = {}  # keyed by "lat,lng" → {"data", "ts"}
 _windgrid_cache_lock = threading.Lock()
-WINDGRID_CACHE_TTL = 600  # 10 minutes
+WINDGRID_CACHE_TTL = 1800  # 30 minutes
 
 _iss_cache = {"data": None, "ts": 0}
 _iss_cache_lock = threading.Lock()
@@ -53,7 +53,7 @@ _amedas_table_cache_lock = threading.Lock()
 
 _eq_cache = {}  # keyed by "lat,lng" -> {"data", "ts"}
 _eq_cache_lock = threading.Lock()
-EQ_CACHE_TTL = 600  # 10 minutes
+EQ_CACHE_TTL = 1800  # 30 minutes
 
 JMA_AMEDAS_BASE = "https://www.jma.go.jp/bosai/amedas/data"
 JMA_AMEDAS_TABLE = "https://www.jma.go.jp/bosai/amedas/const/amedastable.json"
