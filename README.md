@@ -10,13 +10,14 @@
 > - Removed the countdown timer panel and all associated DEF CON theming
 > - Replaced the earth.nullschool.net iframe wind map with a proper Leaflet map + leaflet-velocity particle animation — country outlines are now visible alongside live wind data, and the grid adapts to the visible map area
 > - Added seismic activity panel (USGS M2.5+ weekly feed, no API key)
+> - Async HTTP backend — all outbound API calls use `httpx` with `async def` routes; concurrent requests no longer block on each other
 
 <p align="center">
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.10+-blue?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/python-3.11+-blue?logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/flask-3.x-lightgrey?logo=flask" alt="Flask">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 </p>
@@ -179,10 +180,10 @@ weatherglass/
 | Endpoint | Description |
 |---|---|
 | `GET /` | Dashboard |
-| `GET /api/weather?lat=&lng=&tz=` | Open-Meteo forecast (cached 10 min) |
+| `GET /api/weather?lat=&lng=&tz=` | Open-Meteo forecast (cached 30 min) |
 | `GET /api/amedas?lat=&lng=` | JMA AMeDAS station data (Japan only, cached 5 min) |
-| `GET /api/windgrid?lat=&lng=&n=&s=&e=&w=` | Wind vector grid for leaflet-velocity (cached 10 min) |
-| `GET /api/earthquakes?lat=&lng=` | USGS M2.5+ earthquakes within 1500 km (cached 10 min) |
+| `GET /api/windgrid?lat=&lng=&n=&s=&e=&w=` | Wind vector grid for leaflet-velocity (cached 30 min) |
+| `GET /api/earthquakes?lat=&lng=` | USGS M2.5+ earthquakes within 1500 km (cached 30 min) |
 | `GET /api/iss` | ISS position (cached 15 sec) |
 | `GET /api/timezone?lat=&lng=` | Timezone lookup via Open-Meteo |
 | `GET /api/health` | Connectivity check — tests all upstream APIs |
@@ -222,7 +223,7 @@ Hit `/api/health` to diagnose connectivity issues. Returns status, latency, and 
 
 ## Tech Stack
 
-**Backend:** Python 3.10+, Flask, Requests
+**Backend:** Python 3.11+, Flask, httpx (async HTTP/2)
 
 **Frontend:** Vanilla JS, CSS custom properties, Leaflet + Leaflet Terminator + leaflet-velocity
 

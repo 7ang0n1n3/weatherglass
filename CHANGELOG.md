@@ -4,6 +4,13 @@ All notable changes to this fork are documented here.
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-02-23
+
+### Changed
+- **Async HTTP layer** — replaced `requests` with `httpx[http2]`; all Flask routes are now `async def` via `flask[async]` (asgiref). Concurrent browser requests no longer queue behind blocking outbound HTTP calls.
+- **Parallel health checks** — `/api/health` now probes all five upstream endpoints simultaneously via `asyncio.gather()` instead of sequentially; worst-case latency drops from ~sum of all timeouts to the single slowest response.
+- **Parallel AMeDAS prefetch** — station table and `latest_time.txt` are fetched concurrently on cache miss; second fetch (`map/{time}.json`) follows as before.
+
 ## [1.0.0] — 2026-02-22
 
 Initial release of the 7ang0n1n3 fork, based on [elkentaro/weatherglass](https://github.com/elkentaro/weatherglass).

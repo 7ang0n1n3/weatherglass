@@ -4,11 +4,12 @@ WeatherGlass — Standalone weather dashboard
 Standalone weather dashboard with configurable location.
 """
 
+import asyncio
 import logging
 import math
 import time
 import threading
-import requests
+import httpx
 from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
@@ -63,13 +64,13 @@ JMA_HEADERS = {
 }
 
 
-def _get_amedas_table():
+async def _get_amedas_table(client: httpx.AsyncClient):
     now = time.time()
     with _amedas_table_cache_lock:
         if _amedas_table_cache["data"] and (now - _amedas_table_cache["ts"]) < 86400:
             return _amedas_table_cache["data"]
     try:
-        r = requests.get(JMA_AMEDAS_TABLE, headers=JMA_HEADERS, timeout=10)
+        r = await client.get(JMA_AMEDAS_TABLE, headers=JMA_HEADERS, timeout=10)
         r.raise_for_status()
         data = r.json()
         with _amedas_table_cache_lock:
@@ -116,12 +117,12 @@ def _haversine_km(lat1, lon1, lat2, lon2):
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
 @app.route("/")
-def index():
+async def index():
     return render_template("weather.html")
 
 
 @app.route("/api/weather")
-def api_weather():
+async def api_weather():
     """Return cached Open-Meteo forecast. Accepts ?lat=...&lng=... query params."""
     lat = request.args.get("lat", DEFAULT_LAT, type=float)
     lng = request.args.get("lng", DEFAULT_LNG, type=float)
@@ -154,14 +155,13 @@ def api_weather():
 
     try:
         log.info(f"Weather fetch: lat={lat} lng={lng} tz={tz}")
-        log.info(f"Weather URL: {url}")
-        r = requests.get(url, timeout=15)
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get(url)
         log.info(f"Weather response: status={r.status_code} size={len(r.content)}")
-        if not r.ok:
+        if not r.is_success:
             log.error(f"Weather API error response: {r.text[:500]}")
         r.raise_for_status()
         data = r.json()
-        # Check if Open-Meteo returned an error in JSON
         if "error" in data and "reason" in data:
             log.error(f"Open-Meteo error: {data}")
             return jsonify({"error": data.get("reason", "Unknown API error")}), 502
@@ -183,7 +183,7 @@ def api_weather():
 
 
 @app.route("/api/amedas")
-def api_amedas():
+async def api_amedas():
     """Return live AMeDAS observation for nearest station. Japan only."""
     lat = request.args.get("lat", DEFAULT_LAT, type=float)
     lng = request.args.get("lng", DEFAULT_LNG, type=float)
@@ -205,17 +205,23 @@ def api_amedas():
             })
 
     try:
-        table = _get_amedas_table()
+        async with httpx.AsyncClient(timeout=10) as client:
+            # Fetch station table and latest timestamp in parallel — they're independent
+            table, time_resp = await asyncio.gather(
+                _get_amedas_table(client),
+                client.get(f"{JMA_AMEDAS_BASE}/latest_time.txt", headers=JMA_HEADERS, timeout=5),
+            )
+
         if not table:
             return jsonify({"error": "Could not fetch station table"}), 502
 
-        r = requests.get(f"{JMA_AMEDAS_BASE}/latest_time.txt", headers=JMA_HEADERS, timeout=5)
-        r.raise_for_status()
-        latest_str = r.text.strip()
+        time_resp.raise_for_status()
+        latest_str = time_resp.text.strip()
         time_key = latest_str[:19].replace("-", "").replace("T", "").replace(":", "")
 
-        map_url = f"{JMA_AMEDAS_BASE}/map/{time_key}.json"
-        r = requests.get(map_url, headers=JMA_HEADERS, timeout=10)
+        async with httpx.AsyncClient(timeout=10) as client:
+            map_url = f"{JMA_AMEDAS_BASE}/map/{time_key}.json"
+            r = await client.get(map_url, headers=JMA_HEADERS)
         r.raise_for_status()
         map_data = r.json()
 
@@ -226,7 +232,6 @@ def api_amedas():
         if not station_id or station_id not in map_data:
             return jsonify({"error": "No nearby station with temperature data"}), 502
 
-        # If nearest station is too far (>0.5 degrees ≈ 50km), skip
         if station_dist > 0.5:
             return jsonify({"error": "No nearby AMeDAS station", "unavailable": True}), 200
 
@@ -292,14 +297,15 @@ def api_amedas():
 
 
 @app.route("/api/iss")
-def api_iss():
+async def api_iss():
     """Return current ISS position."""
     now = time.time()
     with _iss_cache_lock:
         if _iss_cache["data"] and (now - _iss_cache["ts"]) < ISS_CACHE_TTL:
             return jsonify(_iss_cache["data"])
     try:
-        r = requests.get("https://api.wheretheiss.at/v1/satellites/25544", timeout=10)
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get("https://api.wheretheiss.at/v1/satellites/25544")
         r.raise_for_status()
         data = r.json()
         with _iss_cache_lock:
@@ -315,7 +321,7 @@ def api_iss():
 
 
 @app.route("/api/earthquakes")
-def api_earthquakes():
+async def api_earthquakes():
     """Return recent M2.5+ earthquakes within 1500 km of a location (USGS)."""
     lat = request.args.get("lat", DEFAULT_LAT, type=float)
     lng = request.args.get("lng", DEFAULT_LNG, type=float)
@@ -328,10 +334,10 @@ def api_earthquakes():
             return jsonify({**cached["data"], "cached": True, "age": int(now - cached["ts"])})
 
     try:
-        r = requests.get(
-            "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson",
-            timeout=15,
-        )
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get(
+                "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson"
+            )
         r.raise_for_status()
         features = r.json().get("features", [])
 
@@ -387,45 +393,50 @@ def api_earthquakes():
 
 
 @app.route("/api/health")
-def api_health():
-    """Quick connectivity check — tests outbound HTTP to Open-Meteo."""
-    results = {}
-    for name, url in [
+async def api_health():
+    """Quick connectivity check — all endpoints probed in parallel."""
+    checks = [
         ("open-meteo", "https://api.open-meteo.com/v1/forecast?latitude=35.56&longitude=139.69&current=temperature_2m&forecast_days=1"),
         ("rainviewer", "https://api.rainviewer.com/public/weather-maps.json"),
         ("iss", "https://api.wheretheiss.at/v1/satellites/25544"),
         ("jma-amedas", "https://www.jma.go.jp/bosai/amedas/data/latest_time.txt"),
         ("usgs-earthquakes", "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson"),
-    ]:
+    ]
+
+    async def check_one(name, url):
         try:
             t0 = time.time()
-            r = requests.get(url, timeout=8)
+            async with httpx.AsyncClient(timeout=8) as client:
+                r = await client.get(url)
             elapsed = round((time.time() - t0) * 1000)
-            results[name] = {
+            return name, {
                 "status": r.status_code,
-                "ok": r.ok,
+                "ok": r.is_success,
                 "ms": elapsed,
                 "bytes": len(r.content),
             }
         except Exception as e:
-            results[name] = {"ok": False, "error": str(e)}
+            return name, {"ok": False, "error": str(e)}
+
+    pairs = await asyncio.gather(*[check_one(name, url) for name, url in checks])
+    results = dict(pairs)
     log.info(f"Health check: {results}")
     return jsonify(results)
 
 
 @app.route("/api/timezone")
-def api_timezone():
+async def api_timezone():
     """Reverse-geocode timezone from coordinates using Open-Meteo."""
     lat = request.args.get("lat", type=float)
     lng = request.args.get("lng", type=float)
     if lat is None or lng is None:
         return jsonify({"error": "lat and lng required"}), 400
     try:
-        r = requests.get(
-            f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}"
-            "&current=temperature_2m&timezone=auto&forecast_days=1",
-            timeout=5,
-        )
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.get(
+                f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}"
+                "&current=temperature_2m&timezone=auto&forecast_days=1"
+            )
         r.raise_for_status()
         data = r.json()
         return jsonify({
@@ -438,19 +449,17 @@ def api_timezone():
 
 
 @app.route("/api/windgrid")
-def api_windgrid():
+async def api_windgrid():
     """Return a wind vector grid for leaflet-velocity covering the visible map bounds."""
     lat = request.args.get("lat", DEFAULT_LAT, type=float)
     lng = request.args.get("lng", DEFAULT_LNG, type=float)
 
-    # Visible map bounds passed from the frontend (with padding already included)
     bn = request.args.get("n", type=float)
     bs = request.args.get("s", type=float)
     be = request.args.get("e", type=float)
     bw = request.args.get("w", type=float)
 
     if all(v is not None for v in [bn, bs, be, bw]):
-        # Add 15% padding so edge particles don't vanish abruptly
         pad_lat = (bn - bs) * 0.15
         pad_lng = (be - bw) * 0.15
         la1 = min(85.0, bn + pad_lat)
@@ -459,7 +468,6 @@ def api_windgrid():
         lo2 = be + pad_lng
         cache_key = f"{bn:.1f},{bs:.1f},{be:.1f},{bw:.1f}"
     else:
-        # Fallback: fixed ±20° box centred on the location
         la1, la2 = lat + 20, lat - 20
         lo1, lo2 = lng - 20, lng + 20
         cache_key = f"{lat:.2f},{lng:.2f}"
@@ -470,14 +478,12 @@ def api_windgrid():
         if cached and (now - cached["ts"]) < WINDGRID_CACHE_TTL:
             return jsonify(cached["data"])
 
-    # Aim for ~20 columns and rows; keep spacing between 1.0 and 3.0 degrees
     span_lat = la1 - la2
     span_lng = lo2 - lo1
     dlat = max(1.0, min(3.0, span_lat / 20))
     dlng = max(1.0, min(3.0, span_lng / 20))
     NY = round(span_lat / dlat) + 1
     NX = round(span_lng / dlng) + 1
-    # Hard cap: Open-Meteo batch limit is 1000 locations
     while NX * NY > 900:
         dlat *= 1.1
         dlng *= 1.1
@@ -500,7 +506,8 @@ def api_windgrid():
 
     try:
         log.info(f"Wind grid fetch: {NX}x{NY} ({NX*NY} pts) span={span_lat:.1f}°lat×{span_lng:.1f}°lng d={dlat:.1f}°")
-        r = requests.get(url, timeout=20)
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.get(url)
         r.raise_for_status()
         points = r.json()
         if not isinstance(points, list):
