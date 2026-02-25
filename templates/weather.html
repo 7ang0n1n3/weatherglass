@@ -867,7 +867,8 @@ function renderEarthquakes(data){
   const mags=eqs.map(function(e){return e.mag;}).filter(function(m){return m!=null;});
   const maxMag=mags.length?Math.max.apply(null,mags):null;
   maxMagEl.textContent=maxMag!=null?'M'+maxMag.toFixed(1):'--';
-  closestEl.textContent=eqs[0].dist_km;
+  const dists=eqs.map(function(e){return e.dist_km;}).filter(function(d){return d!=null;});
+  closestEl.textContent=dists.length?Math.min.apply(null,dists):'--';
   listEl.textContent='';
   for(var i=0;i<eqs.length;i++){
     var eq=eqs[i];

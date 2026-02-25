@@ -379,7 +379,6 @@ async def api_earthquakes():
                 "time_ago": time_ago,
             })
 
-        results.sort(key=lambda x: x["dist_km"])
         payload = {
             "earthquakes": results,
             "total": len(results),

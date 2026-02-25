@@ -4,6 +4,11 @@ All notable changes to this fork are documented here.
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-02-26
+
+### Changed
+- **Earthquake list order** — results are now sorted by most recent first (newest at the top) instead of by distance. CLOSEST stat now computes the minimum distance across all results rather than reading from the first entry.
+
 ## [1.2.0] — 2026-02-26
 
 ### Changed

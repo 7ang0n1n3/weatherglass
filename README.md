@@ -33,7 +33,7 @@
 - **Run conditions gauge** — configurable scoring system for outdoor running suitability
 - **Precipitation radar** — animated RainViewer overlay with playback controls
 - **Wind & currents map** — Leaflet map with live wind particle animation via leaflet-velocity
-- **Seismic activity panel** — M3.0+ earthquakes within 500 km of the set location, last 5 days, via USGS FDSNWS query API; sorted by distance with magnitude colour coding, depth, and time ago
+- **Seismic activity panel** — M3.0+ earthquakes within 500 km of the set location, last 5 days, via USGS FDSNWS query API; sorted by most recent first, with magnitude colour coding, distance, depth, and time ago
 - **ISS tracker** — real-time orbital position, trail, day/night terminator
 - **Moon phase** — photorealistic canvas-rendered moon with illumination data
 - **Dark / Light theme** — toggle between dark and light mode, persists across sessions
