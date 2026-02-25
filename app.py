@@ -9,6 +9,7 @@ import logging
 import math
 import time
 import threading
+from datetime import datetime, timezone, timedelta
 import httpx
 from flask import Flask, render_template, jsonify, request
 
@@ -322,7 +323,7 @@ async def api_iss():
 
 @app.route("/api/earthquakes")
 async def api_earthquakes():
-    """Return recent M2.5+ earthquakes within 1500 km of a location (USGS)."""
+    """Return recent M3.0+ earthquakes within 500 km of a location (last 5 days, USGS)."""
     lat = request.args.get("lat", DEFAULT_LAT, type=float)
     lng = request.args.get("lng", DEFAULT_LNG, type=float)
     cache_key = f"{lat:.2f},{lng:.2f}"
@@ -334,9 +335,17 @@ async def api_earthquakes():
             return jsonify({**cached["data"], "cached": True, "age": int(now - cached["ts"])})
 
     try:
+        # Compute a bounding box slightly larger than 500 km for the API query
+        lat_buf = 5.0
+        lng_buf = 5.0 / max(0.1, math.cos(math.radians(abs(lat))))
+        start = (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%Y-%m-%d")
         async with httpx.AsyncClient(timeout=15) as client:
             r = await client.get(
-                "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson"
+                "https://earthquake.usgs.gov/fdsnws/event/1/query"
+                f"?format=geojson&minmagnitude=3.0"
+                f"&minlatitude={lat - lat_buf:.4f}&maxlatitude={lat + lat_buf:.4f}"
+                f"&minlongitude={lng - lng_buf:.4f}&maxlongitude={lng + lng_buf:.4f}"
+                f"&starttime={start}&orderby=time"
             )
         r.raise_for_status()
         features = r.json().get("features", [])
@@ -350,7 +359,7 @@ async def api_earthquakes():
             eq_lng, eq_lat = coords[0], coords[1]
             depth = coords[2] if len(coords) > 2 else 0
             dist_km = _haversine_km(lat, lng, eq_lat, eq_lng)
-            if dist_km > 1500:
+            if dist_km > 500:
                 continue
             time_ms = props.get("time", 0) or 0
             age_s = int((now * 1000 - time_ms) / 1000)
@@ -371,11 +380,10 @@ async def api_earthquakes():
             })
 
         results.sort(key=lambda x: x["dist_km"])
-        results = results[:15]
         payload = {
             "earthquakes": results,
             "total": len(results),
-            "radius_km": 1500,
+            "radius_km": 500,
             "cached": False,
             "age": 0,
         }
@@ -400,7 +408,7 @@ async def api_health():
         ("rainviewer", "https://api.rainviewer.com/public/weather-maps.json"),
         ("iss", "https://api.wheretheiss.at/v1/satellites/25544"),
         ("jma-amedas", "https://www.jma.go.jp/bosai/amedas/data/latest_time.txt"),
-        ("usgs-earthquakes", "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson"),
+        ("usgs-earthquakes", "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=3.0&limit=1"),
     ]
 
     async def check_one(name, url):

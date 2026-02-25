@@ -9,7 +9,7 @@
 > **Changes in this fork:**
 > - Removed the countdown timer panel and all associated DEF CON theming
 > - Replaced the earth.nullschool.net iframe wind map with a proper Leaflet map + leaflet-velocity particle animation — country outlines are now visible alongside live wind data, and the grid adapts to the visible map area
-> - Added seismic activity panel (USGS M2.5+ weekly feed, no API key)
+> - Added seismic activity panel (USGS M3.0+, 500 km radius, last 5 days via FDSNWS query API, no API key)
 > - Async HTTP backend — all outbound API calls use `httpx` with `async def` routes; concurrent requests no longer block on each other
 
 <p align="center">
@@ -33,7 +33,7 @@
 - **Run conditions gauge** — configurable scoring system for outdoor running suitability
 - **Precipitation radar** — animated RainViewer overlay with playback controls
 - **Wind & currents map** — Leaflet map with live wind particle animation via leaflet-velocity
-- **Seismic activity panel** — nearby M2.5+ earthquakes from the USGS weekly feed, sorted by distance with magnitude colour coding, depth, and time ago
+- **Seismic activity panel** — M3.0+ earthquakes within 500 km of the set location, last 5 days, via USGS FDSNWS query API; sorted by distance with magnitude colour coding, depth, and time ago
 - **ISS tracker** — real-time orbital position, trail, day/night terminator
 - **Moon phase** — photorealistic canvas-rendered moon with illumination data
 - **Dark / Light theme** — toggle between dark and light mode, persists across sessions
@@ -183,7 +183,7 @@ weatherglass/
 | `GET /api/weather?lat=&lng=&tz=` | Open-Meteo forecast (cached 30 min) |
 | `GET /api/amedas?lat=&lng=` | JMA AMeDAS station data (Japan only, cached 5 min) |
 | `GET /api/windgrid?lat=&lng=&n=&s=&e=&w=` | Wind vector grid for leaflet-velocity (cached 30 min) |
-| `GET /api/earthquakes?lat=&lng=` | USGS M2.5+ earthquakes within 1500 km (cached 30 min) |
+| `GET /api/earthquakes?lat=&lng=` | USGS M3.0+ earthquakes within 500 km, last 5 days (cached 30 min) |
 | `GET /api/iss` | ISS position (cached 15 sec) |
 | `GET /api/timezone?lat=&lng=` | Timezone lookup via Open-Meteo |
 | `GET /api/health` | Connectivity check — tests all upstream APIs |
@@ -217,7 +217,7 @@ Hit `/api/health` to diagnose connectivity issues. Returns status, latency, and 
 | [Where the ISS at?](https://wheretheiss.at) | ISS orbital position |
 | [Weather Underground](https://www.wunderground.com) | External weather link |
 | [Himawari-9](https://himawari.asia/) | Satellite imagery link |
-| [USGS Earthquake Hazards](https://earthquake.usgs.gov) | M2.5+ earthquake feed (no API key required) |
+| [USGS Earthquake Hazards](https://earthquake.usgs.gov) | M3.0+ earthquakes via FDSNWS query API (no API key required) |
 
 ---
 

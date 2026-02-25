@@ -838,7 +838,7 @@ async function refreshEarthquakes(){
     if(data.error&&!data.earthquakes)throw new Error(data.error);
     renderEarthquakes(data);
     const ts=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('eq-status').textContent='Updated '+ts+' - radius '+data.radius_km+' km';
+    document.getElementById('eq-status').textContent='Updated '+ts+' — M3.0+ / '+data.radius_km+' km / 5 days';
   }catch(e){
     console.warn('[WG] earthquakes FAIL:',e);
     document.getElementById('eq-status').textContent='Seismic data unavailable';
@@ -861,7 +861,7 @@ function renderEarthquakes(data){
     listEl.textContent='';
     const empty=document.createElement('div');empty.className='loading-state';
     empty.style.color='var(--text-muted)';
-    empty.textContent='No M2.5+ earthquakes within 1500 km in the past week';
+    empty.textContent='No M3.0+ earthquakes within 500 km in the past 5 days';
     listEl.appendChild(empty);return;
   }
   const mags=eqs.map(function(e){return e.mag;}).filter(function(m){return m!=null;});

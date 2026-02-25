@@ -4,6 +4,12 @@ All notable changes to this fork are documented here.
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-02-26
+
+### Changed
+- **Earthquake filter** — switched from the USGS M2.5+ weekly GeoJSON feed to the USGS FDSNWS query API; filter is now M3.0+, within 500 km of the configured weather location, over the last 5 days. A bounding box derived from the location is sent to the API to minimise payload size; exact haversine distance filtering is applied server-side. Results are sorted by distance (closest first).
+- Cache key for `/api/earthquakes` is now per-location (`lat,lng`) as before; `radius_km` in the response reflects the new 500 km limit.
+
 ## [1.1.0] — 2026-02-23
 
 ### Changed
