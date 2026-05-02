@@ -247,3 +247,10 @@ Hit `/api/health` to diagnose connectivity issues. Returns status, latency, and 
 ## License
 
 [MIT](LICENSE)
+
+<!-- release-execute:start -->
+## Current Release
+
+- Version: `1.2.2`
+- Date: `2026-05-03`
+<!-- release-execute:end -->
