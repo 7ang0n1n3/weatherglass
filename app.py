@@ -10,10 +10,13 @@ import math
 import time
 import threading
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 import httpx
 from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
+APP_VERSION = (Path(__file__).with_name("VERSION").read_text(encoding="utf-8").strip()
+               if Path(__file__).with_name("VERSION").exists() else "unknown")
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
 
@@ -119,7 +122,7 @@ def _haversine_km(lat1, lon1, lat2, lon2):
 
 @app.route("/")
 async def index():
-    return render_template("weather.html")
+    return render_template("weather.html", app_version=APP_VERSION)
 
 
 @app.route("/api/weather")

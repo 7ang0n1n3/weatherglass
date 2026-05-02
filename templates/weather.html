@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="version" content="{{ app_version }}">
 <title>WeatherGlass</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -253,6 +254,7 @@ body{background:var(--bg-0);color:var(--text-primary);font-family:var(--sans);li
 .data-sources{margin-top:24px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);font-family:var(--mono)}
 .data-sources a{color:var(--text-secondary);text-decoration:none}
 .data-sources a:hover{color:var(--cyan)}
+.app-version{text-align:center;margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--text-muted)}
 
 @media(max-width:900px){.maps-row{grid-template-columns:1fr}.forecast-grid{grid-template-columns:1fr}.current-banner{grid-template-columns:1fr}.current-weather{flex-wrap:wrap}.moon-panel{border-left:none;border-top:1px solid var(--border)}.current-temp{font-size:56px}.current-loc-header{padding:10px 16px 0}.current-loc-detail{flex-wrap:wrap;gap:8px}}
 
@@ -425,6 +427,7 @@ body{background:var(--bg-0);color:var(--text-primary);font-family:var(--sans);li
   <div class="data-sources">
     <span>Data: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> · <a href="https://www.rainviewer.com" target="_blank">RainViewer</a> · <a href="https://earth.nullschool.net" target="_blank">nullschool</a> · <a href="https://wheretheiss.at" target="_blank">Where the ISS at?</a> · <a href="https://himawari.asia/" target="_blank">Himawari-9</a> · <a href="https://earthquake.usgs.gov" target="_blank">USGS Earthquakes</a></span>
   </div>
+  <div class="app-version">v{{ app_version }}</div>
 </div>
 
 <script>

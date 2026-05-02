@@ -251,6 +251,6 @@ Hit `/api/health` to diagnose connectivity issues. Returns status, latency, and 
 <!-- release-execute:start -->
 ## Current Release
 
-- Version: `1.2.2`
+- Version: `1.2.3`
 - Date: `2026-05-03`
 <!-- release-execute:end -->

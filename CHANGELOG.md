@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.2.3 - 2026-05-03
+
+- Chore: prepare release 1.2.2
+- Fix: sort earthquake list by most recent first
+- Feat: tighten earthquake filter to M3.0+, 500 km radius, last 5 days
+- Perf: async HTTP layer with httpx, parallel health checks and AMeDAS prefetch
+- Perf: increase weather/wind/earthquake cache TTL to 30 minutes
+- Chore: remove author attribution from LICENSE
+- Fix: update default coordinates to Tokyo Hino-shi in app.py
+- Docs: add CHANGELOG and link it from README
+- Docs: update default location references to Tokyo Hino-shi
+- Fix: sync frontend DEFAULT_LOCATION with app.py defaults
+- Docs: update screenshots with earthquake panel
+- Docker: use /wgapp as clone target instead of /app
+- Docker: fix restart by cloning to /app, drop unused quote_cache volume
+- Docker: rm -rf /wgapp before clone to fix restart collision
+- Docker: clone into /wgapp to match UV_PROJECT_ENVIRONMENT path
+- Feat: add seismic activity panel (USGS M2.5+ earthquakes)
+- Docs: fix ports example in README (8080 → 5099)
+- Docker: always pull latest base image
+- Iss: increase cache TTL to 15s, timeout to 10s, poll interval to 15s
+- Docs: add Docker/Portainer deployment section to README
+- Docker: clone and run from GitHub at startup
+- Update screenshots
+- Fork: remove countdown timer, fix wind map
+
 ## 1.2.2 - 2026-05-03
 
 - Fix: sort earthquake list by most recent first
